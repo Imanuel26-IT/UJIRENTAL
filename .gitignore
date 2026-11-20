@@ -1,0 +1,25 @@
+# NetBeans & Ant Build Artifacts
+build/
+dist/
+nbproject/private/
+
+# NetBeans Profiler
+.nb-profiler/
+
+# Editor & IDE configs
+.idea/
+*.iml
+.vscode/
+.settings/
+.project
+.classpath
+
+# OS generated files
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+$RECYCLE.BIN/
+.DS_Store
+
+# Log files
+*.log
