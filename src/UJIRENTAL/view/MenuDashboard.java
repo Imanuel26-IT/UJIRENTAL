@@ -4,6 +4,12 @@
  */
 package UJIRENTAL.view;
 
+import UJIRENTAL.controller.PelangganController;
+import UJIRENTAL.model.Pelanggan;
+import java.util.List;
+import javax.swing.JOptionPane;
+import javax.swing.JTextField;
+
 /**
  *
  * @author IMANUEL VALEN LINGGI
@@ -11,6 +17,7 @@ package UJIRENTAL.view;
 public class MenuDashboard extends javax.swing.JPanel {
 
     private final DashboardFrame dashboardFrame;
+    private final PelangganController customerController;
 
     /**
      * Creates new form MenuDashboard
@@ -21,7 +28,15 @@ public class MenuDashboard extends javax.swing.JPanel {
 
     public MenuDashboard(DashboardFrame dashboardFrame) {
         this.dashboardFrame = dashboardFrame;
+        this.customerController = new PelangganController();
         initComponents();
+        muatTotalPelanggan();
+    }
+    
+    private void muatTotalPelanggan() {
+    List<Pelanggan> daftarPelanggan = customerController.getAllPelanggan();
+    int totalPelanggan = (daftarPelanggan != null) ? daftarPelanggan.size() : 0;
+    jLabel11.setText(String.valueOf(totalPelanggan));
     }
 
     /**
@@ -221,14 +236,17 @@ public class MenuDashboard extends javax.swing.JPanel {
         );
 
         btnTransaksiBaru.setBackground(new java.awt.Color(204, 204, 255));
+        btnTransaksiBaru.setForeground(new java.awt.Color(0, 0, 0));
         btnTransaksiBaru.setText("Transaksi Baru");
         btnTransaksiBaru.addActionListener(this::btnTransaksiBaruActionPerformed);
 
         btnTambahMobil.setBackground(new java.awt.Color(255, 204, 204));
+        btnTambahMobil.setForeground(new java.awt.Color(0, 0, 0));
         btnTambahMobil.setText("Tambah Mobil");
         btnTambahMobil.addActionListener(this::btnTambahMobilActionPerformed);
 
         btnTambahPelanggan.setBackground(new java.awt.Color(255, 102, 153));
+        btnTambahPelanggan.setForeground(new java.awt.Color(0, 0, 0));
         btnTambahPelanggan.setText("Tambah Pelanggan");
         btnTambahPelanggan.addActionListener(this::btnTambahPelangganActionPerformed);
 
@@ -323,7 +341,8 @@ public class MenuDashboard extends javax.swing.JPanel {
     }//GEN-LAST:event_pnlTotalKendaraanComponentShown
 
     private void pnlTotalPelangganComponentShown(java.awt.event.ComponentEvent evt) {//GEN-FIRST:event_pnlTotalPelangganComponentShown
-        // TODO add your handling code here:
+        // TODO: Perbarui jumlah total pelanggan saat panel ditampilkan
+        muatTotalPelanggan();
     }//GEN-LAST:event_pnlTotalPelangganComponentShown
 
     private void pnlMobilTersediaComponentShown(java.awt.event.ComponentEvent evt) {//GEN-FIRST:event_pnlMobilTersediaComponentShown
@@ -347,7 +366,47 @@ public class MenuDashboard extends javax.swing.JPanel {
     }//GEN-LAST:event_btnTambahMobilActionPerformed
 
     private void btnTambahPelangganActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btnTambahPelangganActionPerformed
-        // TODO add your handling code here:
+        // TODO: Ambil input pelanggan baru, simpan lewat PelangganController, lalu perbarui total pelanggan
+        JTextField txtNikBaru = new JTextField();
+        JTextField txtNamaBaru = new JTextField();
+        JTextField txtTeleponBaru = new JTextField();
+        JTextField txtAlamatBaru = new JTextField();
+        JTextField txtEmailBaru = new JTextField();
+        JTextField txtFotoKtpBaru = new JTextField();
+
+        Object[] inputFields = {
+        "NIK:", txtNikBaru,
+        "Nama Pelanggan:", txtNamaBaru,
+        "No. Telepon:", txtTeleponBaru,
+        "Alamat:", txtAlamatBaru,
+        "Email:", txtEmailBaru,
+        "Foto KTP:", txtFotoKtpBaru
+    };
+
+    int pilihan = JOptionPane.showConfirmDialog(
+            this, inputFields, "Tambah Pelanggan", JOptionPane.OK_CANCEL_OPTION);
+
+    if (pilihan == JOptionPane.OK_OPTION) {
+        Pelanggan pelangganBaru = new Pelanggan();
+        pelangganBaru.setNik(txtNikBaru.getText().trim());
+        pelangganBaru.setNamaPelanggan(txtNamaBaru.getText().trim());
+        pelangganBaru.setNoTelepon(txtTeleponBaru.getText().trim());
+        pelangganBaru.setAlamat(txtAlamatBaru.getText().trim());
+        pelangganBaru.setEmail(txtEmailBaru.getText().trim());
+        pelangganBaru.setFotoKtp(txtFotoKtpBaru.getText().trim());
+
+        boolean sukses = customerController.tambahPelanggan(pelangganBaru);
+        if (sukses) {
+            muatTotalPelanggan();
+            JOptionPane.showMessageDialog(this, "Data pelanggan berhasil disimpan.");
+        } else {
+            JOptionPane.showMessageDialog(
+                    this,
+                    "Gagal menyimpan pelanggan. Periksa NIK (harus unik), Nama, dan No. Telepon.",
+                    "Peringatan",
+                    JOptionPane.WARNING_MESSAGE);
+        }
+        }
     }//GEN-LAST:event_btnTambahPelangganActionPerformed
 
 

@@ -41,7 +41,7 @@ CREATE TABLE `mobil` (
   `no_mesin` varchar(50) DEFAULT NULL,
   `created_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP,
   `updated_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 --
 -- Dumping data for table `mobil`
@@ -71,7 +71,7 @@ CREATE TABLE `pelanggan` (
   `foto_ktp` varchar(255) DEFAULT NULL,
   `created_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP,
   `updated_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 -- --------------------------------------------------------
 
@@ -88,7 +88,7 @@ CREATE TABLE `promo` (
   `status_promo` varchar(20) NOT NULL DEFAULT 'Aktif',
   `created_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP,
   `updated_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 --
 -- Dumping data for table `promo`
@@ -116,7 +116,7 @@ CREATE TABLE `transaksi` (
   `status_transaksi` varchar(30) NOT NULL DEFAULT 'Sedang Berjalan',
   `created_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP,
   `updated_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 --
 -- Indexes for dumped tables
@@ -186,3 +186,29 @@ COMMIT;
 /*!40101 SET CHARACTER_SET_CLIENT=@OLD_CHARACTER_SET_CLIENT */;
 /*!40101 SET CHARACTER_SET_RESULTS=@OLD_CHARACTER_SET_RESULTS */;
 /*!40101 SET COLLATION_CONNECTION=@OLD_COLLATION_CONNECTION */;
+
+
+CREATE DATABASE IF NOT EXISTS db_ujirental CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci
+
+USE db_ujirental;
+
+CREATE TABLE IF NOT EXISTS `pelanggan` (
+  `id_pelanggan` int NOT NULL AUTO_INCREMENT,
+  `nik` varchar(20) NOT NULL,
+  `nama_pelanggan` varchar(100) NOT NULL,
+  `alamat` text,
+  `no_telepon` varchar(20) NOT NULL,
+  `email` varchar(100) DEFAULT NULL,
+  `foto_ktp` varchar(255) DEFAULT NULL,
+  `created_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP,
+  `updated_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id_pelanggan`),
+  UNIQUE KEY `nik` (`nik`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+USE db_ujirental;
+
+INSERT INTO `pelanggan` (`nik`, `nama_pelanggan`, `alamat`, `no_telepon`, `email`, `foto_ktp`) VALUES
+('3373011504950002', 'Nadia Kusuma', 'Jl. Osamaliki No. 22, Salatiga', '081325678910', 'nadia.kusuma@example.com', 'ktp_nadia_kusuma.jpg'),
+('3373022008920003', 'Dimas Hermawan', 'Jl. Pemuda No. 88, Salatiga', '085740991122', 'dimas.hermawan@example.com', 'ktp_dimas_hermawan.jpg'),
+('3373031011990004', 'Salsa Wijaya', 'Jl. Kartini No. 14, Salatiga', '082136778899', 'salsa.wijaya@example.com', 'ktp_salsa_wijaya.jpg');

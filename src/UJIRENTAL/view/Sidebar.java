@@ -182,7 +182,10 @@ public class Sidebar extends javax.swing.JPanel {
     }//GEN-LAST:event_btnMenuMobilActionPerformed
 
     private void btnMenuPelangganActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btnMenuPelangganActionPerformed
-        // TODO add your handling code here:
+        // TODO: Buka halaman MenuPelanggan lewat DashboardFrame saat tombol Pelanggan diklik
+        if (dashboardFrame != null) {
+            dashboardFrame.tampilkanMenu(DashboardFrame.CARD_PELANGGAN, "Pelanggan");
+        }
     }//GEN-LAST:event_btnMenuPelangganActionPerformed
 
     private void btnMenuTransaksiActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btnMenuTransaksiActionPerformed

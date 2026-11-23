@@ -21,11 +21,13 @@ public class DashboardFrame extends javax.swing.JFrame {
     public static final String CARD_DASHBOARD = "CARD_DASHBOARD";
     public static final String CARD_MOBIL = "CARD_MOBIL";
     public static final String CARD_TRANSAKSI = "CARD_TRANSAKSI";
+    public static final String CARD_PELANGGAN = "CARD_PELANGGAN";
 
     // Komponen yang dibutuhkan saat berpindah halaman
     private Header header;
     private JPanel pnlKonten;
     private CardLayout cardLayout;
+    private MenuPelanggan customerMenuView;
 
     public DashboardFrame() {
         initComponents();
@@ -39,10 +41,13 @@ public class DashboardFrame extends javax.swing.JFrame {
 
         cardLayout = new CardLayout();
         pnlKonten = new JPanel(cardLayout);
+        
+        customerMenuView = new MenuPelanggan();
 
         pnlKonten.add(new MenuDashboard(this), CARD_DASHBOARD);
         pnlKonten.add(new MenuMobil(), CARD_MOBIL);
         pnlKonten.add(new MenuTransaksi(), CARD_TRANSAKSI);
+        pnlKonten.add(customerMenuView, CARD_PELANGGAN);
 
         JPanel pnlKanan = new JPanel(new BorderLayout());
         pnlKanan.add(header, BorderLayout.NORTH);
@@ -66,9 +71,13 @@ public class DashboardFrame extends javax.swing.JFrame {
     public void tampilkanMenu(String namaCard, String judulHeader) {
         boolean menuDikenal = CARD_DASHBOARD.equals(namaCard)
                 || CARD_MOBIL.equals(namaCard)
-                || CARD_TRANSAKSI.equals(namaCard);
+                || CARD_TRANSAKSI.equals(namaCard)
+                || CARD_PELANGGAN.equals(namaCard);
         if (!menuDikenal || judulHeader == null) {
             throw new IllegalArgumentException("Menu atau judul tidak valid.");
+        }
+        if (CARD_PELANGGAN.equals(namaCard) && customerMenuView != null) {
+            customerMenuView.muatUlangDataPelanggan();
         }
 
         cardLayout.show(pnlKonten, namaCard);
