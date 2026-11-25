@@ -19,109 +19,96 @@ import java.util.List;
  */
 public class PromoController {
 
-    // Ambil seluruh aturan promo
-    public List<Promo> getAllPromo() {
-        List<Promo> listPromo = new ArrayList<>();
-        String sql = "SELECT * FROM promo ORDER BY id_promo DESC";
+    public List<Promo> getAllPromo() throws SQLException {
+        List<Promo> list = new ArrayList<>();
+        String sql = """
+            SELECT * FROM promo ORDER BY id_promo DESC
+            """;
 
         try (Connection conn = Koneksi.getConnection();
-             PreparedStatement ps = conn.prepareStatement(sql);
-             ResultSet rs = ps.executeQuery()) {
-
+            PreparedStatement ps = conn.prepareStatement(sql);
+            ResultSet rs = ps.executeQuery()) {
             while (rs.next()) {
-                listPromo.add(mapResultSetToPromo(rs));
+                list.add(mapResultSetToPromo(rs));
             }
-        } catch (SQLException e) {
-            System.err.println("Gagal mengambil data promo: " + e.getMessage());
         }
-        return listPromo;
+        return list;
     }
 
-    // Ambil promo aktif utama (digunakan oleh PromoServis untuk menghitung kelayakan gratis)
-    public Promo getPromoAktif() {
-        String sql = "SELECT * FROM promo WHERE status_promo = 'Aktif' ORDER BY id_promo DESC LIMIT 1";
+    public Promo getPromoAktif() throws SQLException {
+        String sql = """
+            SELECT * FROM promo WHERE status_promo = 'Aktif'
+            ORDER BY id_promo DESC LIMIT 1
+            """;
 
         try (Connection conn = Koneksi.getConnection();
-             PreparedStatement ps = conn.prepareStatement(sql);
-             ResultSet rs = ps.executeQuery()) {
-
+            PreparedStatement ps = conn.prepareStatement(sql);
+            ResultSet rs = ps.executeQuery()) {
             if (rs.next()) {
                 return mapResultSetToPromo(rs);
             }
-        } catch (SQLException e) {
-            System.err.println("Gagal mengambil promo aktif: " + e.getMessage());
         }
         return null;
     }
 
-    // Tambah aturan promo baru
-    public boolean tambahPromo(Promo promo) {
-        String sql = "INSERT INTO promo (nama_promo, minimal_sewa, periode_bulan, hadiah, status_promo) "
-                   + "VALUES (?, ?, ?, ?, ?)";
+    public boolean tambahPromo(Promo promo) throws SQLException {
+        String sql = """
+            INSERT INTO promo (nama_promo, minimal_sewa, periode_bulan, hadiah, status_promo)
+            VALUES (?, ?, ?, ?, ?)
+         """;
 
         try (Connection conn = Koneksi.getConnection();
-             PreparedStatement ps = conn.prepareStatement(sql)) {
-
+            PreparedStatement ps = conn.prepareStatement(sql)) {
             ps.setString(1, promo.getNamaPromo());
             ps.setInt(2, promo.getMinimalSewa());
             ps.setInt(3, promo.getPeriodeBulan());
             ps.setString(4, promo.getHadiah());
             ps.setString(5, promo.getStatusPromo() != null ? promo.getStatusPromo() : "Aktif");
-
             return ps.executeUpdate() > 0;
-        } catch (SQLException e) {
-            System.err.println("Gagal menambah promo: " + e.getMessage());
-            return false;
         }
     }
 
-    // Perbarui aturan promo
-    public boolean updatePromo(Promo promo) {
-        String sql = "UPDATE promo SET nama_promo = ?, minimal_sewa = ?, periode_bulan = ?, "
-                   + "hadiah = ?, status_promo = ? WHERE id_promo = ?";
+    public boolean updatePromo(Promo promo) throws SQLException {
+        String sql = """
+            UPDATE promo SET nama_promo = ?, minimal_sewa = ?, periode_bulan = ?,
+                            hadiah = ?, status_promo = ?
+            WHERE id_promo = ?
+            """;
 
         try (Connection conn = Koneksi.getConnection();
-             PreparedStatement ps = conn.prepareStatement(sql)) {
-
+            PreparedStatement ps = conn.prepareStatement(sql)) {
             ps.setString(1, promo.getNamaPromo());
             ps.setInt(2, promo.getMinimalSewa());
             ps.setInt(3, promo.getPeriodeBulan());
             ps.setString(4, promo.getHadiah());
             ps.setString(5, promo.getStatusPromo());
             ps.setInt(6, promo.getIdPromo());
-
             return ps.executeUpdate() > 0;
-        } catch (SQLException e) {
-            System.err.println("Gagal memperbarui promo: " + e.getMessage());
-            return false;
         }
     }
 
-    // Hapus promo
-    public boolean hapusPromo(int idPromo) {
-        String sql = "DELETE FROM promo WHERE id_promo = ?";
+    public boolean hapusPromo(int idPromo) throws SQLException {
+        String sql = """
+            DELETE FROM promo WHERE id_promo = ?
+            """;
 
         try (Connection conn = Koneksi.getConnection();
-             PreparedStatement ps = conn.prepareStatement(sql)) {
-
+            PreparedStatement ps = conn.prepareStatement(sql)) {
             ps.setInt(1, idPromo);
             return ps.executeUpdate() > 0;
-        } catch (SQLException e) {
-            System.err.println("Gagal menghapus promo: " + e.getMessage());
-            return false;
         }
     }
 
     private Promo mapResultSetToPromo(ResultSet rs) throws SQLException {
-        Promo p = new Promo();
-        p.setIdPromo(rs.getInt("id_promo"));
-        p.setNamaPromo(rs.getString("nama_promo"));
-        p.setMinimalSewa(rs.getInt("minimal_sewa"));
-        p.setPeriodeBulan(rs.getInt("periode_bulan"));
-        p.setHadiah(rs.getString("hadiah"));
-        p.setStatusPromo(rs.getString("status_promo"));
-        p.setCreatedAt(rs.getTimestamp("created_at"));
-        p.setUpdatedAt(rs.getTimestamp("updated_at"));
-        return p;
+        Promo promo = new Promo();
+        promo.setIdPromo(rs.getInt("id_promo"));
+        promo.setNamaPromo(rs.getString("nama_promo"));
+        promo.setMinimalSewa(rs.getInt("minimal_sewa"));
+        promo.setPeriodeBulan(rs.getInt("periode_bulan"));
+        promo.setHadiah(rs.getString("hadiah"));
+        promo.setStatusPromo(rs.getString("status_promo"));
+        promo.setCreatedAt(rs.getTimestamp("created_at"));
+        promo.setUpdatedAt(rs.getTimestamp("updated_at"));
+        return promo;
     }
 }

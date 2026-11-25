@@ -165,7 +165,7 @@ public class Sidebar extends javax.swing.JPanel {
             layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
             .addGroup(layout.createSequentialGroup()
                 .addComponent(pnlSidebar, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
-                .addGap(0, 12, Short.MAX_VALUE))
+                .addGap(0, 0, Short.MAX_VALUE))
         );
     }// </editor-fold>//GEN-END:initComponents
 
@@ -182,7 +182,9 @@ public class Sidebar extends javax.swing.JPanel {
     }//GEN-LAST:event_btnMenuMobilActionPerformed
 
     private void btnMenuPelangganActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btnMenuPelangganActionPerformed
-        // TODO add your handling code here:
+        if (dashboardFrame != null) {
+            dashboardFrame.tampilkanMenu(DashboardFrame.CARD_PELANGGAN, "Pelanggan");
+        }
     }//GEN-LAST:event_btnMenuPelangganActionPerformed
 
     private void btnMenuTransaksiActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btnMenuTransaksiActionPerformed
@@ -192,7 +194,9 @@ public class Sidebar extends javax.swing.JPanel {
     }//GEN-LAST:event_btnMenuTransaksiActionPerformed
 
     private void btnMenuLaporanActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btnMenuLaporanActionPerformed
-        // TODO add your handling code here:
+        if (dashboardFrame != null) {
+            dashboardFrame.tampilkanMenu(DashboardFrame.CARD_LAPORAN, "Laporan");
+        }
     }//GEN-LAST:event_btnMenuLaporanActionPerformed
 
 

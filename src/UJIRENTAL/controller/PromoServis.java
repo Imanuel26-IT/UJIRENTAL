@@ -19,11 +19,9 @@ public class PromoServis {
 
     private final PelangganController pelangganController = new PelangganController();
 
-    public PromoStatus cekStatusPromo(int idPelanggan) {
+    public PromoStatus cekStatusPromo(int idPelanggan) throws SQLException {
         try (Connection conn = Koneksi.getConnection()) {
             return hitungStatusPromo(conn, idPelanggan);
-        } catch (SQLException e) {
-            throw new IllegalStateException("Gagal menghitung status promo pelanggan.", e);
         }
     }
 
@@ -32,7 +30,7 @@ public class PromoServis {
         return status != null && status.isDapatGratis();
     }
 
-    public List<PromoStatus> getAllPromoStatus() {
+    public List<PromoStatus> getAllPromoStatus() throws SQLException {
         List<PromoStatus> daftarStatus = new ArrayList<>();
         for (Pelanggan pelanggan : pelangganController.getAllPelanggan()) {
             PromoStatus status = cekStatusPromo(pelanggan.getIdPelanggan());
@@ -44,19 +42,23 @@ public class PromoServis {
     }
 
     private PromoStatus hitungStatusPromo(Connection conn, int idPelanggan) throws SQLException {
-        // Batas awal: hari ini -90. Batas akhir: hari ini -1 (kemarin).
-        String sql = "SELECT p.nama_pelanggan, t.status_transaksi, t.gratis_promo "
-                   + "FROM pelanggan p "
-                   + "LEFT JOIN transaksi t ON t.id_pelanggan = p.id_pelanggan "
-                   + "AND (t.tanggal_sewa BETWEEN DATE_SUB(CURDATE(), INTERVAL ? DAY) "
-                   + "AND DATE_SUB(CURDATE(), INTERVAL ? DAY) "
-                   + "OR (t.status_transaksi = 'Sedang Berjalan' AND t.gratis_promo = 1)) "
-                   + "WHERE p.id_pelanggan = ?";
+        String sql = """
+            SELECT p.nama_pelanggan,
+                   COALESCE(SUM(CASE WHEN t.status_transaksi = 'Selesai' AND t.gratis_promo = 0 THEN 1 ELSE 0 END), 0) AS berbayar,
+                   COALESCE(SUM(CASE WHEN t.status_transaksi = 'Selesai' AND t.gratis_promo = 1 THEN 1 ELSE 0 END), 0) AS promo_selesai,
+                   COALESCE(SUM(CASE WHEN t.status_transaksi = 'Sedang Berjalan' AND t.gratis_promo = 1 THEN 1 ELSE 0 END), 0) AS promo_dipakai
+            FROM pelanggan p
+            LEFT JOIN transaksi t ON t.id_pelanggan = p.id_pelanggan
+            AND (t.tanggal_sewa BETWEEN DATE_SUB(CURDATE(), INTERVAL ? DAY)
+            AND DATE_SUB(CURDATE(), INTERVAL ? DAY)
+            OR (t.status_transaksi = 'Sedang Berjalan' AND t.gratis_promo = 1))
+            WHERE p.id_pelanggan = ?
+            """;
 
+        String namaPelanggan = null;
         int totalSewaBerbayar = 0;
         int jumlahPromoSelesai = 0;
         boolean promoSedangDipakai = false;
-        String namaPelanggan = null;
 
         try (PreparedStatement ps = conn.prepareStatement(sql)) {
             ps.setInt(1, BATAS_HARI_KE_BELAKANG);
@@ -64,35 +66,20 @@ public class PromoServis {
             ps.setInt(3, idPelanggan);
 
             try (ResultSet rs = ps.executeQuery()) {
-                while (rs.next()) {
+                if (rs.next()) {
                     namaPelanggan = rs.getString("nama_pelanggan");
-                    String status = rs.getString("status_transaksi");
-                    boolean isGratis = rs.getBoolean("gratis_promo");
-
-                    if ("Sedang Berjalan".equals(status) && isGratis) {
-                        promoSedangDipakai = true;
-                    }
-
-                    if ("Selesai".equals(status)) {
-                        if (isGratis) {
-                            jumlahPromoSelesai++;
-                        } else {
-                            totalSewaBerbayar++;
-                        }
-                    }
+                    totalSewaBerbayar = rs.getInt("berbayar");
+                    jumlahPromoSelesai = rs.getInt("promo_selesai");
+                    promoSedangDipakai = rs.getInt("promo_dipakai") > 0;
                 }
             }
         }
 
         if (namaPelanggan == null) {
-            return null; 
+            return null;
         }
 
-        int jumlahSewaEfektif = totalSewaBerbayar - (jumlahPromoSelesai * MINIMAL_SEWA);
-        if (jumlahSewaEfektif < 0) {
-            jumlahSewaEfektif = 0;
-        }
-
+        int jumlahSewaEfektif = Math.max(0, totalSewaBerbayar - (jumlahPromoSelesai * MINIMAL_SEWA));
         boolean dapatGratis = jumlahSewaEfektif >= MINIMAL_SEWA && !promoSedangDipakai;
 
         PromoStatus status = new PromoStatus(
@@ -107,4 +94,4 @@ public class PromoServis {
         status.setSudahDipakai(promoSedangDipakai);
         return status;
     }
-}
+}   

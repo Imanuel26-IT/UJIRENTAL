@@ -4,21 +4,53 @@
  */
 package UJIRENTAL.view;
 
-/**
- *
- * @author IMANUEL VALEN LINGGI
- */
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
+import java.util.Locale;
+import javax.swing.Timer;
+
 public class Header extends javax.swing.JPanel {
+
+    private final DateTimeFormatter formatHariTanggal =
+            DateTimeFormatter.ofPattern("EEEE, dd MMMM yyyy", new Locale("in", "ID"));
+    private final DateTimeFormatter formatJam =
+            DateTimeFormatter.ofPattern("HH:mm:ss");
+    private final Timer timerJam;
 
     /**
      * Creates new form Header
      */
     public Header() {
         initComponents();
+        timerJam = new Timer(1000, e -> perbaruiHariTanggalDanJam());
+        perbaruiHariTanggalDanJam();
+        timerJam.start();
     }
 
     public void setJudulMenu(String judul) {
         lblTampilanMenu.setText(judul);
+    }
+
+    private void perbaruiHariTanggalDanJam() {
+        LocalDateTime sekarang = LocalDateTime.now();
+        lblHariTanggalSekarang.setText(sekarang.format(formatHariTanggal));
+        lblJamSekarang.setText(sekarang.format(formatJam));
+    }
+
+    @Override
+    public void addNotify() {
+        super.addNotify();
+        if (timerJam != null) {
+            timerJam.start();
+        }
+    }
+
+    @Override
+    public void removeNotify() {
+        if (timerJam != null) {
+            timerJam.stop();
+        }
+        super.removeNotify();
     }
 
     /**
@@ -68,6 +100,8 @@ public class Header extends javax.swing.JPanel {
         pnlLblHaridanTanggal.setBackground(new java.awt.Color(102, 102, 255));
         pnlLblHaridanTanggal.setBorder(javax.swing.BorderFactory.createLineBorder(new java.awt.Color(0, 0, 0)));
 
+        lblHariTanggalSekarang.setFont(new java.awt.Font("Segoe UI", 1, 12)); // NOI18N
+        lblHariTanggalSekarang.setForeground(new java.awt.Color(255, 255, 255));
         lblHariTanggalSekarang.setText("Hari, Tanggal");
 
         javax.swing.GroupLayout pnlLblHaridanTanggalLayout = new javax.swing.GroupLayout(pnlLblHaridanTanggal);
@@ -90,6 +124,8 @@ public class Header extends javax.swing.JPanel {
         pnlLblWaktu.setBackground(new java.awt.Color(102, 102, 255));
         pnlLblWaktu.setBorder(javax.swing.BorderFactory.createLineBorder(new java.awt.Color(0, 0, 0)));
 
+        lblJamSekarang.setFont(new java.awt.Font("Segoe UI", 1, 12)); // NOI18N
+        lblJamSekarang.setForeground(new java.awt.Color(255, 255, 255));
         lblJamSekarang.setText("Jam");
 
         javax.swing.GroupLayout pnlLblWaktuLayout = new javax.swing.GroupLayout(pnlLblWaktu);

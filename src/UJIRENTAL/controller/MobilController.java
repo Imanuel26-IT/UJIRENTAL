@@ -19,96 +19,94 @@ import java.util.List;
  */
 public class MobilController {
 
-    // Ambil semua data mobil untuk ditampilkan di JTable MenuMobil
-    public List<Mobil> getAllMobil() {
-        List<Mobil> listMobil = new ArrayList<>();
-        String sql = "SELECT * FROM mobil ORDER BY created_at DESC";
+    public List<Mobil> getAllMobil() throws SQLException {
+        List<Mobil> list = new ArrayList<>();
+        String sql = """
+            SELECT * FROM mobil ORDER BY created_at DESC
+            """;
 
         try (Connection conn = Koneksi.getConnection();
-             PreparedStatement ps = conn.prepareStatement(sql);
-             ResultSet rs = ps.executeQuery()) {
-
+            PreparedStatement ps = conn.prepareStatement(sql);
+            ResultSet rs = ps.executeQuery()) {
             while (rs.next()) {
-                listMobil.add(mapResultSetToMobil(rs));
+                list.add(mapResultSetToMobil(rs));
             }
-        } catch (SQLException e) {
-            System.err.println("Gagal mengambil data mobil: " + e.getMessage());
         }
-        return listMobil;
+        return list;
     }
 
-    // Ambil hanya mobil berstatus 'Tersedia' untuk JComboBox di MenuTransaksi
-    public List<Mobil> getMobilTersedia() {
-        List<Mobil> listTersedia = new ArrayList<>();
-        String sql = "SELECT * FROM mobil WHERE status = 'Tersedia' ORDER BY merek_mobil ASC, tipe_mobil ASC";
+    public List<Mobil> getMobilTersedia() throws SQLException {
+        List<Mobil> list = new ArrayList<>();
+        String sql = """
+            SELECT * FROM mobil WHERE status = 'Tersedia'
+            ORDER BY merek_mobil ASC, tipe_mobil ASC
+            """;
 
         try (Connection conn = Koneksi.getConnection();
-             PreparedStatement ps = conn.prepareStatement(sql);
-             ResultSet rs = ps.executeQuery()) {
-
+            PreparedStatement ps = conn.prepareStatement(sql);
+            ResultSet rs = ps.executeQuery()) {
             while (rs.next()) {
-                listTersedia.add(mapResultSetToMobil(rs));
+                list.add(mapResultSetToMobil(rs));
             }
-        } catch (SQLException e) {
-            System.err.println("Gagal mengambil mobil tersedia: " + e.getMessage());
         }
-        return listTersedia;
+        return list;
     }
 
-    // Cari satu mobil berdasarkan Plat Nomor
-    public Mobil getMobilByPlat(String platNomor) {
-        String sql = "SELECT * FROM mobil WHERE plat_nomor = ?";
+    public Mobil getMobilByPlat(String platNomor) throws SQLException {
+        String sql = """
+            SELECT * FROM mobil WHERE plat_nomor = ?
+            """;
 
         try (Connection conn = Koneksi.getConnection();
-             PreparedStatement ps = conn.prepareStatement(sql)) {
-
+            PreparedStatement ps = conn.prepareStatement(sql)) {
             ps.setString(1, platNomor);
             try (ResultSet rs = ps.executeQuery()) {
                 if (rs.next()) {
                     return mapResultSetToMobil(rs);
                 }
             }
-        } catch (SQLException e) {
-            System.err.println("Gagal mencari detail mobil: " + e.getMessage());
         }
         return null;
     }
 
-    // Pencarian dinamis berdasarkan plat nomor, merek, tipe, atau status
-    public List<Mobil> cariMobil(String keyword) {
-        List<Mobil> listHasil = new ArrayList<>();
-        String sql = "SELECT * FROM mobil WHERE plat_nomor LIKE ? OR merek_mobil LIKE ? "
-                   + "OR tipe_mobil LIKE ? OR status LIKE ? ORDER BY created_at DESC";
+    public List<Mobil> cariMobil(String keyword) throws SQLException {
+        List<Mobil> list = new ArrayList<>();
+        if (keyword == null) {
+            return list;
+        }
+
+        String sql = """
+            SELECT * FROM mobil
+            WHERE plat_nomor LIKE ? OR merek_mobil LIKE ?
+            OR tipe_mobil LIKE ? OR status LIKE ?
+            ORDER BY created_at DESC
+            """;
 
         try (Connection conn = Koneksi.getConnection();
-             PreparedStatement ps = conn.prepareStatement(sql)) {
-
+            PreparedStatement ps = conn.prepareStatement(sql)) {
             String pola = "%" + keyword + "%";
             ps.setString(1, pola);
             ps.setString(2, pola);
             ps.setString(3, pola);
             ps.setString(4, pola);
-
             try (ResultSet rs = ps.executeQuery()) {
                 while (rs.next()) {
-                    listHasil.add(mapResultSetToMobil(rs));
+                    list.add(mapResultSetToMobil(rs));
                 }
             }
-        } catch (SQLException e) {
-            System.err.println("Gagal melakukan pencarian mobil: " + e.getMessage());
         }
-        return listHasil;
+        return list;
     }
 
-    // Simpan data mobil baru
-    public boolean tambahMobil(Mobil mobil) {
-        String sql = "INSERT INTO mobil (plat_nomor, merek_mobil, tipe_mobil, harga_sewa, "
-                   + "warna, transmisi, status, tahun, kapasitas, no_rangka, no_mesin) "
-                   + "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
+    public boolean tambahMobil(Mobil mobil) throws SQLException {
+        String sql = """
+            INSERT INTO mobil (plat_nomor, merek_mobil, tipe_mobil, harga_sewa,
+                            warna, transmisi, status, tahun, kapasitas, no_rangka, no_mesin)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            """;
 
         try (Connection conn = Koneksi.getConnection();
-             PreparedStatement ps = conn.prepareStatement(sql)) {
-
+            PreparedStatement ps = conn.prepareStatement(sql)) {
             ps.setString(1, mobil.getPlatNomor());
             ps.setString(2, mobil.getMerekMobil());
             ps.setString(3, mobil.getTipeMobil());
@@ -120,23 +118,20 @@ public class MobilController {
             ps.setInt(9, mobil.getKapasitas());
             ps.setString(10, mobil.getNoRangka());
             ps.setString(11, mobil.getNoMesin());
-
             return ps.executeUpdate() > 0;
-        } catch (SQLException e) {
-            System.err.println("Gagal menambah mobil: " + e.getMessage());
-            return false;
         }
     }
 
-    // Update data mobil (mendukung perubahan plat nomor menggunakan platNomorLama)
-    public boolean updateMobil(Mobil mobil, String platNomorLama) {
-        String sql = "UPDATE mobil SET plat_nomor = ?, merek_mobil = ?, tipe_mobil = ?, "
-                   + "harga_sewa = ?, warna = ?, transmisi = ?, status = ?, tahun = ?, "
-                   + "kapasitas = ?, no_rangka = ?, no_mesin = ? WHERE plat_nomor = ?";
+    public boolean updateMobil(Mobil mobil, String platNomorLama) throws SQLException {
+        String sql = """
+            UPDATE mobil SET plat_nomor = ?, merek_mobil = ?, tipe_mobil = ?,
+                            harga_sewa = ?, warna = ?, transmisi = ?, status = ?, tahun = ?,
+                            kapasitas = ?, no_rangka = ?, no_mesin = ?
+            WHERE plat_nomor = ?
+            """;
 
         try (Connection conn = Koneksi.getConnection();
-             PreparedStatement ps = conn.prepareStatement(sql)) {
-
+            PreparedStatement ps = conn.prepareStatement(sql)) {
             ps.setString(1, mobil.getPlatNomor());
             ps.setString(2, mobil.getMerekMobil());
             ps.setString(3, mobil.getTipeMobil());
@@ -149,61 +144,50 @@ public class MobilController {
             ps.setString(10, mobil.getNoRangka());
             ps.setString(11, mobil.getNoMesin());
             ps.setString(12, platNomorLama);
-
             return ps.executeUpdate() > 0;
-        } catch (SQLException e) {
-            System.err.println("Gagal memperbarui data mobil: " + e.getMessage());
-            return false;
         }
     }
 
-    // Update khusus status mobil (dipanggil otomatis saat transaksi mulai/selesai)
-    public boolean updateStatusMobil(String platNomor, String statusBaru) {
-        String sql = "UPDATE mobil SET status = ? WHERE plat_nomor = ?";
+    public boolean updateStatusMobil(String platNomor, String statusBaru) throws SQLException {
+        String sql = """
+            UPDATE mobil SET status = ? WHERE plat_nomor = ?
+            """;
 
         try (Connection conn = Koneksi.getConnection();
-             PreparedStatement ps = conn.prepareStatement(sql)) {
-
+            PreparedStatement ps = conn.prepareStatement(sql)) {
             ps.setString(1, statusBaru);
             ps.setString(2, platNomor);
             return ps.executeUpdate() > 0;
-        } catch (SQLException e) {
-            System.err.println("Gagal mengubah status mobil: " + e.getMessage());
-            return false;
         }
     }
 
-    // Hapus data mobil berdasarkan Plat Nomor
-    public boolean hapusMobil(String platNomor) {
-        String sql = "DELETE FROM mobil WHERE plat_nomor = ?";
+    public boolean hapusMobil(String platNomor) throws SQLException {
+        String sql = """
+            DELETE FROM mobil WHERE plat_nomor = ?
+            """;
 
         try (Connection conn = Koneksi.getConnection();
-             PreparedStatement ps = conn.prepareStatement(sql)) {
-
+            PreparedStatement ps = conn.prepareStatement(sql)) {
             ps.setString(1, platNomor);
             return ps.executeUpdate() > 0;
-        } catch (SQLException e) {
-            System.err.println("Gagal menghapus mobil (pastikan tidak terikat transaksi): " + e.getMessage());
-            return false;
         }
     }
 
-    // Helper mapping ResultSet -> Object Mobil
     private Mobil mapResultSetToMobil(ResultSet rs) throws SQLException {
-        Mobil m = new Mobil();
-        m.setPlatNomor(rs.getString("plat_nomor"));
-        m.setMerekMobil(rs.getString("merek_mobil"));
-        m.setTipeMobil(rs.getString("tipe_mobil"));
-        m.setHargaSewa(rs.getBigDecimal("harga_sewa"));
-        m.setWarna(rs.getString("warna"));
-        m.setTransmisi(rs.getString("transmisi"));
-        m.setStatus(rs.getString("status"));
-        m.setTahun(rs.getInt("tahun"));
-        m.setKapasitas(rs.getInt("kapasitas"));
-        m.setNoRangka(rs.getString("no_rangka"));
-        m.setNoMesin(rs.getString("no_mesin"));
-        m.setCreatedAt(rs.getTimestamp("created_at"));
-        m.setUpdatedAt(rs.getTimestamp("updated_at"));
-        return m;
+        Mobil mobil = new Mobil();
+        mobil.setPlatNomor(rs.getString("plat_nomor"));
+        mobil.setMerekMobil(rs.getString("merek_mobil"));
+        mobil.setTipeMobil(rs.getString("tipe_mobil"));
+        mobil.setHargaSewa(rs.getBigDecimal("harga_sewa"));
+        mobil.setWarna(rs.getString("warna"));
+        mobil.setTransmisi(rs.getString("transmisi"));
+        mobil.setStatus(rs.getString("status"));
+        mobil.setTahun(rs.getInt("tahun"));
+        mobil.setKapasitas(rs.getInt("kapasitas"));
+        mobil.setNoRangka(rs.getString("no_rangka"));
+        mobil.setNoMesin(rs.getString("no_mesin"));
+        mobil.setCreatedAt(rs.getTimestamp("created_at"));
+        mobil.setUpdatedAt(rs.getTimestamp("updated_at"));
+        return mobil;
     }
 }

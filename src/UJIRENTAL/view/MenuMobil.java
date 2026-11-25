@@ -3,6 +3,7 @@ package UJIRENTAL.view;
 import UJIRENTAL.model.Mobil;
 import UJIRENTAL.controller.MobilController;
 import java.math.BigDecimal;
+import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.List;
 import javax.swing.table.DefaultTableModel;
@@ -51,7 +52,21 @@ public class MenuMobil extends javax.swing.JPanel {
     }
 
     private void muatDataMobil() {
-        List<Mobil> semuaMobil = mobilController.getAllMobil();
+        List<Mobil> semuaMobil;
+        try {
+            semuaMobil = mobilController.getAllMobil();
+        } catch (SQLException ex) {
+            modelTabelMobil.setRowCount(0);
+            mobilDitampilkan.clear();
+            lblTotalMobil.setText("0");
+            JOptionPane.showMessageDialog(
+                    this,
+                    "Gagal memuat data mobil: " + ex.getMessage(),
+                    "Kesalahan Database",
+                    JOptionPane.ERROR_MESSAGE
+            );
+            return;
+        }
         String kataKunci = txtCariMobil.getText().trim().toLowerCase();
         String statusFilter = (String) cmbFilterStatusMobil.getSelectedItem();
 
@@ -671,7 +686,19 @@ public class MenuMobil extends javax.swing.JPanel {
             return;
         }
 
-        if (!mobilController.hapusMobil(mobilTerpilih.getPlatNomor())) {
+        boolean berhasil;
+        try {
+            berhasil = mobilController.hapusMobil(mobilTerpilih.getPlatNomor());
+        } catch (SQLException ex) {
+            JOptionPane.showMessageDialog(
+                    this,
+                    "Gagal menghapus mobil: " + ex.getMessage(),
+                    "Kesalahan Database",
+                    JOptionPane.ERROR_MESSAGE
+            );
+            return;
+        }
+        if (!berhasil) {
             JOptionPane.showMessageDialog(
                     this,
                     "Mobil gagal dihapus. Mobil mungkin masih digunakan dalam transaksi.",
@@ -697,7 +724,19 @@ public class MenuMobil extends javax.swing.JPanel {
             return;
         }
 
-        if (!mobilController.updateMobil(mobilBaru, mobilTerpilih.getPlatNomor())) {
+        boolean berhasil;
+        try {
+            berhasil = mobilController.updateMobil(mobilBaru, mobilTerpilih.getPlatNomor());
+        } catch (SQLException ex) {
+            JOptionPane.showMessageDialog(
+                    this,
+                    "Gagal memperbarui mobil: " + ex.getMessage(),
+                    "Kesalahan Database",
+                    JOptionPane.ERROR_MESSAGE
+            );
+            return;
+        }
+        if (!berhasil) {
             JOptionPane.showMessageDialog(
                     this,
                     "Data mobil gagal diperbarui. Periksa kembali plat nomor dan koneksi database.",
@@ -722,7 +761,19 @@ public class MenuMobil extends javax.swing.JPanel {
             return;
         }
 
-        if (!mobilController.tambahMobil(mobil)) {
+        boolean berhasil;
+        try {
+            berhasil = mobilController.tambahMobil(mobil);
+        } catch (SQLException ex) {
+            JOptionPane.showMessageDialog(
+                    this,
+                    "Gagal menambahkan mobil: " + ex.getMessage(),
+                    "Kesalahan Database",
+                    JOptionPane.ERROR_MESSAGE
+            );
+            return;
+        }
+        if (!berhasil) {
             JOptionPane.showMessageDialog(
                     this,
                     "Mobil gagal ditambahkan. Plat nomor mungkin sudah terdaftar atau koneksi database bermasalah.",

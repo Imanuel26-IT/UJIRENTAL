@@ -22,302 +22,239 @@ import java.util.List;
  */
 public class TransaksiController {
 
+    private static final String BERJALAN = "Sedang Berjalan";
+    private static final String SELESAI = "Selesai";
+    private static final String DIBATALKAN = "Dibatalkan";
+
+    private static final String SQL_DASAR = """
+        SELECT t.*,
+               CONCAT(m.merek_mobil, ' ', m.tipe_mobil, ' - ', m.plat_nomor) AS nama_mobil,
+               p.nama_pelanggan
+        FROM transaksi t
+        JOIN mobil m ON t.plat_nomor = m.plat_nomor
+        JOIN pelanggan p ON t.id_pelanggan = p.id_pelanggan
+        """;
+
     private final PromoServis promoServis = new PromoServis();
 
-    // Ambil semua transaksi lengkap dengan nama mobil & nama pelanggan (untuk JTable MenuTransaksi)
-    public List<Transaksi> getAllTransaksi() {
-        List<Transaksi> listTransaksi = new ArrayList<>();
-        String sql = "SELECT t.*, "
-                   + "CONCAT(m.merek_mobil, ' ', m.tipe_mobil, ' - ', m.plat_nomor) AS nama_mobil, "
-                   + "p.nama_pelanggan "
-                   + "FROM transaksi t "
-                   + "JOIN mobil m ON t.plat_nomor = m.plat_nomor "
-                   + "JOIN pelanggan p ON t.id_pelanggan = p.id_pelanggan "
-                   + "ORDER BY t.created_at DESC";
+    public List<Transaksi> getAllTransaksi() throws SQLException {
+        List<Transaksi> list = new ArrayList<>();
+        String sql = SQL_DASAR + "ORDER BY t.created_at DESC";
 
         try (Connection conn = Koneksi.getConnection();
              PreparedStatement ps = conn.prepareStatement(sql);
              ResultSet rs = ps.executeQuery()) {
-
             while (rs.next()) {
-                listTransaksi.add(mapResultSetToTransaksi(rs));
+                list.add(mapResultSetToTransaksi(rs));
             }
-        } catch (SQLException e) {
-            System.err.println("Gagal mengambil data transaksi: " + e.getMessage());
         }
-        return listTransaksi;
+        return list;
     }
 
-    // Filter transaksi berdasarkan status ('Sedang Berjalan', 'Selesai', 'Dibatalkan')
-    public List<Transaksi> getTransaksiByStatus(String statusTransaksi) {
-        List<Transaksi> listTransaksi = new ArrayList<>();
-        String sql = "SELECT t.*, "
-                   + "CONCAT(m.merek_mobil, ' ', m.tipe_mobil, ' - ', m.plat_nomor) AS nama_mobil, "
-                   + "p.nama_pelanggan "
-                   + "FROM transaksi t "
-                   + "JOIN mobil m ON t.plat_nomor = m.plat_nomor "
-                   + "JOIN pelanggan p ON t.id_pelanggan = p.id_pelanggan "
-                   + "WHERE t.status_transaksi = ? "
-                   + "ORDER BY t.created_at DESC";
+    public List<Transaksi> getTransaksiByStatus(String statusTransaksi) throws SQLException {
+        List<Transaksi> list = new ArrayList<>();
+        String sql = SQL_DASAR + "WHERE t.status_transaksi = ? ORDER BY t.created_at DESC";
 
         try (Connection conn = Koneksi.getConnection();
              PreparedStatement ps = conn.prepareStatement(sql)) {
-
             ps.setString(1, statusTransaksi);
             try (ResultSet rs = ps.executeQuery()) {
                 while (rs.next()) {
-                    listTransaksi.add(mapResultSetToTransaksi(rs));
+                    list.add(mapResultSetToTransaksi(rs));
                 }
             }
-        } catch (SQLException e) {
-            System.err.println("Gagal memfilter transaksi: " + e.getMessage());
         }
-        return listTransaksi;
+        return list;
     }
 
-    // Pencarian transaksi berdasarkan plat nomor, nama pelanggan, atau ID transaksi
-    public List<Transaksi> cariTransaksi(String keyword) {
-        List<Transaksi> listHasil = new ArrayList<>();
+    public List<Transaksi> cariTransaksi(String keyword) throws SQLException {
+        List<Transaksi> list = new ArrayList<>();
         if (keyword == null) {
-            System.err.println("Pencarian transaksi gagal: kata kunci tidak boleh null.");
-            return listHasil;
+            return list;
         }
-
-        String sql = "SELECT t.*, "
-                   + "CONCAT(m.merek_mobil, ' ', m.tipe_mobil, ' - ', m.plat_nomor) AS nama_mobil, "
-                   + "p.nama_pelanggan "
-                   + "FROM transaksi t "
-                   + "JOIN mobil m ON t.plat_nomor = m.plat_nomor "
-                   + "JOIN pelanggan p ON t.id_pelanggan = p.id_pelanggan "
-                   + "WHERE t.plat_nomor LIKE ? OR p.nama_pelanggan LIKE ? "
-                   + "OR CAST(t.id_transaksi AS CHAR) LIKE ? "
-                   + "ORDER BY t.created_at DESC";
+        String sql = SQL_DASAR + """
+            WHERE t.plat_nomor LIKE ?
+               OR p.nama_pelanggan LIKE ?
+               OR CAST(t.id_transaksi AS CHAR) LIKE ?
+            ORDER BY t.created_at DESC
+            """;
 
         try (Connection conn = Koneksi.getConnection();
              PreparedStatement ps = conn.prepareStatement(sql)) {
-
             String pola = "%" + keyword + "%";
             ps.setString(1, pola);
             ps.setString(2, pola);
             ps.setString(3, pola);
-
             try (ResultSet rs = ps.executeQuery()) {
                 while (rs.next()) {
-                    listHasil.add(mapResultSetToTransaksi(rs));
+                    list.add(mapResultSetToTransaksi(rs));
                 }
             }
-        } catch (SQLException e) {
-            System.err.println("Gagal mencari transaksi: " + e.getMessage());
         }
-        return listHasil;
+        return list;
     }
 
-    /**
-     * Menyimpan transaksi baru dan otomatis memakai promo jika pelanggan memenuhi syarat.
-     */
-    public boolean tambahTransaksi(Transaksi trx) {
-        if (trx == null || trx.getPlatNomor() == null || trx.getPlatNomor().trim().isEmpty()
-                || trx.getIdPelanggan() <= 0 || trx.getTanggalSewa() == null
-                || trx.getTanggalKembali() == null || trx.getTanggalKembali().compareTo(trx.getTanggalSewa()) <= 0
-                || trx.getLamaSewa() <= 0
-                || ChronoUnit.DAYS.between(trx.getTanggalSewa().toLocalDate(), trx.getTanggalKembali().toLocalDate())
-                        != trx.getLamaSewa()
-                || trx.getTotalHarga() == null
-                || trx.getTotalHarga().signum() < 0
-                || (trx.getDenda() != null && trx.getDenda().signum() < 0)) {
-            System.err.println("Transaksi gagal: data transaksi tidak valid.");
+    public boolean tambahTransaksi(Transaksi trx) throws SQLException {
+        if (!isValid(trx)) {
             return false;
         }
 
-        String sqlInsert = "INSERT INTO transaksi (plat_nomor, id_pelanggan, tanggal_sewa, tanggal_kembali, "
-                         + "lama_sewa, total_harga, denda, gratis_promo, status_transaksi) "
-                         + "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)";
-        String sqlKunciPelanggan = "SELECT id_pelanggan FROM pelanggan WHERE id_pelanggan = ? FOR UPDATE";
-        String sqlUpdateMobil = "UPDATE mobil SET status = 'Disewa' WHERE plat_nomor = ? AND status = 'Tersedia'";
+        String sqlInsert = """
+            INSERT INTO transaksi (plat_nomor, id_pelanggan, tanggal_sewa, tanggal_kembali,
+                                   lama_sewa, total_harga, denda, gratis_promo, status_transaksi)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+            """;
+        String sqlKunciPelanggan = """
+            SELECT id_pelanggan FROM pelanggan WHERE id_pelanggan = ? FOR UPDATE
+            """;
+        String sqlUpdateMobil = """
+            UPDATE mobil SET status = 'Disewa' WHERE plat_nomor = ? AND status = 'Tersedia'
+            """;
 
-        try (Connection conn = Koneksi.getConnection()) {
+        try (Connection conn = Koneksi.getConnection();
+             PreparedStatement psPelanggan = conn.prepareStatement(sqlKunciPelanggan);
+             PreparedStatement psInsert = conn.prepareStatement(sqlInsert);
+             PreparedStatement psMobil = conn.prepareStatement(sqlUpdateMobil)) {
+
             conn.setAutoCommit(false);
 
-            try (PreparedStatement psPelanggan = conn.prepareStatement(sqlKunciPelanggan);
-                 PreparedStatement psInsert = conn.prepareStatement(sqlInsert);
-                 PreparedStatement psMobil = conn.prepareStatement(sqlUpdateMobil)) {
-
-                psPelanggan.setInt(1, trx.getIdPelanggan());
-                try (ResultSet rs = psPelanggan.executeQuery()) {
-                    if (!rs.next()) {
-                        conn.rollback();
-                        System.err.println("Transaksi dibatalkan: Pelanggan tidak ditemukan.");
-                        return false;
-                    }
-                }
-
-                boolean pakaiGratisPromo = promoServis.isPromoAvailable(conn, trx.getIdPelanggan());
-
-                // Cek apakah mobil masih tersedia sebelum dikunci transaksi
-                psMobil.setString(1, trx.getPlatNomor());
-                int mobilUpdated = psMobil.executeUpdate();
-                if (mobilUpdated == 0) {
+            psPelanggan.setInt(1, trx.getIdPelanggan());
+            try (ResultSet rs = psPelanggan.executeQuery()) {
+                if (!rs.next()) {
                     conn.rollback();
-                    System.err.println("Transaksi dibatalkan: Mobil tidak tersedia atau sedang disewa.");
                     return false;
                 }
-
-                psInsert.setString(1, trx.getPlatNomor());
-                psInsert.setInt(2, trx.getIdPelanggan());
-                psInsert.setDate(3, trx.getTanggalSewa());
-                psInsert.setDate(4, trx.getTanggalKembali());
-                psInsert.setInt(5, trx.getLamaSewa());
-                psInsert.setBigDecimal(6, pakaiGratisPromo ? BigDecimal.ZERO : trx.getTotalHarga());
-                psInsert.setBigDecimal(7, trx.getDenda() != null ? trx.getDenda() : BigDecimal.ZERO);
-                psInsert.setBoolean(8, pakaiGratisPromo);
-                psInsert.setString(9, "Sedang Berjalan");
-
-                psInsert.executeUpdate();
-                conn.commit();
-                trx.setGratisPromo(pakaiGratisPromo);
-                if (pakaiGratisPromo) {
-                    trx.setTotalHarga(BigDecimal.ZERO);
-                }
-                return true;
-            } catch (SQLException ex) {
-                conn.rollback();
-                throw ex;
             }
-        } catch (SQLException e) {
-            System.err.println("Gagal menyimpan transaksi baru: " + e.getMessage());
-            return false;
+
+            boolean pakaiGratisPromo = promoServis.isPromoAvailable(conn, trx.getIdPelanggan());
+
+            psMobil.setString(1, trx.getPlatNomor());
+            if (psMobil.executeUpdate() == 0) {
+                conn.rollback();
+                return false;
+            }
+
+            psInsert.setString(1, trx.getPlatNomor());
+            psInsert.setInt(2, trx.getIdPelanggan());
+            psInsert.setDate(3, trx.getTanggalSewa());
+            psInsert.setDate(4, trx.getTanggalKembali());
+            psInsert.setInt(5, trx.getLamaSewa());
+            psInsert.setBigDecimal(6, pakaiGratisPromo ? BigDecimal.ZERO : trx.getTotalHarga());
+            psInsert.setBigDecimal(7, trx.getDenda() != null ? trx.getDenda() : BigDecimal.ZERO);
+            psInsert.setBoolean(8, pakaiGratisPromo);
+            psInsert.setString(9, BERJALAN);
+            psInsert.executeUpdate();
+
+            conn.commit();
+            trx.setGratisPromo(pakaiGratisPromo);
+            if (pakaiGratisPromo) {
+                trx.setTotalHarga(BigDecimal.ZERO);
+            }
+            return true;
         }
     }
 
-    /**
-     * Menyelesaikan transaksi (pengembalian mobil) secara atomik:
-     * 1. Update status_transaksi = 'Selesai' beserta nominal denda (jika terlambat)
-     * 2. Kembalikan status mobil menjadi 'Tersedia'
-     */
-    public boolean selesaikanTransaksi(int idTransaksi, String platNomor, BigDecimal denda) {
+    public boolean selesaikanTransaksi(int idTransaksi, String platNomor, BigDecimal denda) throws SQLException {
         if (idTransaksi <= 0 || platNomor == null || platNomor.trim().isEmpty()
                 || (denda != null && denda.signum() < 0)) {
-            System.err.println("Pengembalian gagal: data transaksi tidak valid.");
             return false;
         }
 
-        String sqlTransaksi = "UPDATE transaksi SET status_transaksi = 'Selesai', denda = ? "
-                            + "WHERE id_transaksi = ? AND plat_nomor = ? AND status_transaksi = 'Sedang Berjalan'";
-        String sqlMobil = "UPDATE mobil SET status = 'Tersedia' "
-                        + "WHERE plat_nomor = ? AND status = 'Disewa'";
+        String sqlTransaksi = """
+            UPDATE transaksi SET status_transaksi = 'Selesai', denda = ?
+            WHERE id_transaksi = ? AND plat_nomor = ? AND status_transaksi = 'Sedang Berjalan'
+            """;
+        String sqlMobil = """
+            UPDATE mobil SET status = 'Tersedia'
+            WHERE plat_nomor = ? AND status = 'Disewa'
+            """;
 
-        try (Connection conn = Koneksi.getConnection()) {
+        try (Connection conn = Koneksi.getConnection();
+             PreparedStatement psTrx = conn.prepareStatement(sqlTransaksi);
+             PreparedStatement psMobil = conn.prepareStatement(sqlMobil)) {
+
             conn.setAutoCommit(false);
 
-            try (PreparedStatement psTrx = conn.prepareStatement(sqlTransaksi);
-                 PreparedStatement psMobil = conn.prepareStatement(sqlMobil)) {
-
-                psTrx.setBigDecimal(1, denda != null ? denda : BigDecimal.ZERO);
-                psTrx.setInt(2, idTransaksi);
-                psTrx.setString(3, platNomor);
-                if (psTrx.executeUpdate() == 0) {
-                    conn.rollback();
-                    System.err.println("Pengembalian gagal: transaksi tidak aktif atau data mobil tidak cocok.");
-                    return false;
-                }
-
-                psMobil.setString(1, platNomor);
-                if (psMobil.executeUpdate() == 0) {
-                    conn.rollback();
-                    System.err.println("Pengembalian gagal: status mobil bukan 'Disewa'.");
-                    return false;
-                }
-
-                conn.commit();
-                return true;
-            } catch (SQLException ex) {
+            psTrx.setBigDecimal(1, denda != null ? denda : BigDecimal.ZERO);
+            psTrx.setInt(2, idTransaksi);
+            psTrx.setString(3, platNomor);
+            if (psTrx.executeUpdate() == 0) {
                 conn.rollback();
-                throw ex;
+                return false;
             }
-        } catch (SQLException e) {
-            System.err.println("Gagal menyelesaikan transaksi: " + e.getMessage());
-            return false;
+
+            psMobil.setString(1, platNomor);
+            if (psMobil.executeUpdate() == 0) {
+                conn.rollback();
+                return false;
+            }
+
+            conn.commit();
+            return true;
         }
     }
 
-    /**
-     * Membatalkan transaksi aktif dan mengembalikan status mobil menjadi 'Tersedia'.
-     */
-    public boolean batalkanTransaksi(int idTransaksi, String platNomor) {
+    public boolean batalkanTransaksi(int idTransaksi, String platNomor) throws SQLException {
         if (idTransaksi <= 0 || platNomor == null || platNomor.trim().isEmpty()) {
-            System.err.println("Pembatalan gagal: data transaksi tidak valid.");
             return false;
         }
 
-        String sqlTransaksi = "UPDATE transaksi SET status_transaksi = 'Dibatalkan' "
-                            + "WHERE id_transaksi = ? AND plat_nomor = ? AND status_transaksi = 'Sedang Berjalan'";
-        String sqlMobil = "UPDATE mobil SET status = 'Tersedia' "
-                        + "WHERE plat_nomor = ? AND status = 'Disewa'";
+        String sqlTransaksi = """
+            UPDATE transaksi SET status_transaksi = 'Dibatalkan'
+            WHERE id_transaksi = ? AND plat_nomor = ? AND status_transaksi = 'Sedang Berjalan'
+            """;
+        String sqlMobil = """
+            UPDATE mobil SET status = 'Tersedia'
+            WHERE plat_nomor = ? AND status = 'Disewa'
+            """;
 
-        try (Connection conn = Koneksi.getConnection()) {
+        try (Connection conn = Koneksi.getConnection();
+             PreparedStatement psTrx = conn.prepareStatement(sqlTransaksi);
+             PreparedStatement psMobil = conn.prepareStatement(sqlMobil)) {
+
             conn.setAutoCommit(false);
 
-            try (PreparedStatement psTrx = conn.prepareStatement(sqlTransaksi);
-                 PreparedStatement psMobil = conn.prepareStatement(sqlMobil)) {
-
-                psTrx.setInt(1, idTransaksi);
-                psTrx.setString(2, platNomor);
-                if (psTrx.executeUpdate() == 0) {
-                    conn.rollback();
-                    System.err.println("Pembatalan gagal: transaksi tidak aktif atau data mobil tidak cocok.");
-                    return false;
-                }
-
-                psMobil.setString(1, platNomor);
-                if (psMobil.executeUpdate() == 0) {
-                    conn.rollback();
-                    System.err.println("Pembatalan gagal: status mobil bukan 'Disewa'.");
-                    return false;
-                }
-
-                conn.commit();
-                return true;
-            } catch (SQLException ex) {
+            psTrx.setInt(1, idTransaksi);
+            psTrx.setString(2, platNomor);
+            if (psTrx.executeUpdate() == 0) {
                 conn.rollback();
-                throw ex;
+                return false;
             }
-        } catch (SQLException e) {
-            System.err.println("Gagal membatalkan transaksi: " + e.getMessage());
-            return false;
+
+            psMobil.setString(1, platNomor);
+            if (psMobil.executeUpdate() == 0) {
+                conn.rollback();
+                return false;
+            }
+
+            conn.commit();
+            return true;
         }
     }
 
-    /**
-     * Mengambil seluruh data ringkasan statistik untuk ditampilkan pada MenuDashboard.
-     */
-    public Dashboard getDashboardData() {
+    public Dashboard getDashboardData() throws SQLException {
         Dashboard dashboard = new Dashboard();
 
-        String sqlMobil = "SELECT "
-                        + "COUNT(*) AS total, "
-                        + "COALESCE(SUM(CASE WHEN status = 'Tersedia' THEN 1 ELSE 0 END), 0) AS tersedia, "
-                        + "COALESCE(SUM(CASE WHEN status = 'Disewa' THEN 1 ELSE 0 END), 0) AS disewa, "
-                        + "COALESCE(SUM(CASE WHEN status = 'Perawatan' THEN 1 ELSE 0 END), 0) AS perawatan "
-                        + "FROM mobil";
-
-        String sqlPelanggan = "SELECT COUNT(*) AS total FROM pelanggan";
-
-        String sqlTransaksi = "SELECT "
-                            + "COALESCE(SUM(CASE WHEN status_transaksi = 'Sedang Berjalan' THEN 1 ELSE 0 END), 0) AS aktif, "
-                            + "COALESCE(SUM(CASE WHEN status_transaksi = 'Selesai' THEN 1 ELSE 0 END), 0) AS selesai, "
-                            + "COALESCE(SUM(CASE WHEN status_transaksi = 'Sedang Berjalan' AND tanggal_kembali < CURDATE() THEN 1 ELSE 0 END), 0) AS terlambat, "
-                            + "COALESCE(SUM(CASE WHEN status_transaksi = 'Selesai' AND DATE(updated_at) = CURDATE() THEN (total_harga + denda) ELSE 0 END), 0) AS hari_ini, "
-                            + "COALESCE(SUM(CASE WHEN status_transaksi = 'Selesai' AND MONTH(updated_at) = MONTH(CURDATE()) AND YEAR(updated_at) = YEAR(CURDATE()) THEN (total_harga + denda) ELSE 0 END), 0) AS bulan_ini, "
-                            + "COALESCE(SUM(CASE WHEN status_transaksi = 'Selesai' THEN (total_harga + denda) ELSE 0 END), 0) AS total_pendapatan "
-                            + "FROM transaksi";
-
-        String sqlTerbaru = "SELECT t.*, "
-                          + "CONCAT(m.merek_mobil, ' ', m.tipe_mobil, ' - ', m.plat_nomor) AS nama_mobil, "
-                          + "p.nama_pelanggan "
-                          + "FROM transaksi t "
-                          + "JOIN mobil m ON t.plat_nomor = m.plat_nomor "
-                          + "JOIN pelanggan p ON t.id_pelanggan = p.id_pelanggan "
-                          + "ORDER BY t.created_at DESC LIMIT 10";
+        String sqlMobil = """
+            SELECT COUNT(*) AS total,
+                   COALESCE(SUM(CASE WHEN status = 'Tersedia' THEN 1 ELSE 0 END), 0) AS tersedia,
+                   COALESCE(SUM(CASE WHEN status = 'Disewa' THEN 1 ELSE 0 END), 0) AS disewa,
+                   COALESCE(SUM(CASE WHEN status = 'Perawatan' THEN 1 ELSE 0 END), 0) AS perawatan
+            FROM mobil
+            """;
+        String sqlPelanggan = """
+            SELECT COUNT(*) AS total FROM pelanggan
+            """;
+        String sqlTransaksi = """
+            SELECT COALESCE(SUM(CASE WHEN status_transaksi = 'Sedang Berjalan' THEN 1 ELSE 0 END), 0) AS aktif,
+                   COALESCE(SUM(CASE WHEN status_transaksi = 'Selesai' THEN 1 ELSE 0 END), 0) AS selesai,
+                   COALESCE(SUM(CASE WHEN status_transaksi = 'Sedang Berjalan' AND tanggal_kembali < CURDATE() THEN 1 ELSE 0 END), 0) AS terlambat,
+                   COALESCE(SUM(CASE WHEN status_transaksi = 'Selesai' AND DATE(updated_at) = CURDATE() THEN (total_harga + denda) ELSE 0 END), 0) AS hari_ini,
+                   COALESCE(SUM(CASE WHEN status_transaksi = 'Selesai' AND MONTH(updated_at) = MONTH(CURDATE()) AND YEAR(updated_at) = YEAR(CURDATE()) THEN (total_harga + denda) ELSE 0 END), 0) AS bulan_ini,
+                   COALESCE(SUM(CASE WHEN status_transaksi = 'Selesai' THEN (total_harga + denda) ELSE 0 END), 0) AS total_pendapatan
+            FROM transaksi
+            """;
+        String sqlTerbaru = SQL_DASAR + "ORDER BY t.created_at DESC LIMIT 10";
 
         try (Connection conn = Koneksi.getConnection()) {
             try (PreparedStatement ps = conn.prepareStatement(sqlMobil);
@@ -329,14 +266,12 @@ public class TransaksiController {
                     dashboard.setMobilPerawatan(rs.getInt("perawatan"));
                 }
             }
-
             try (PreparedStatement ps = conn.prepareStatement(sqlPelanggan);
                  ResultSet rs = ps.executeQuery()) {
                 if (rs.next()) {
                     dashboard.setTotalPelanggan(rs.getInt("total"));
                 }
             }
-
             try (PreparedStatement ps = conn.prepareStatement(sqlTransaksi);
                  ResultSet rs = ps.executeQuery()) {
                 if (rs.next()) {
@@ -348,7 +283,6 @@ public class TransaksiController {
                     dashboard.setTotalPendapatan(rs.getBigDecimal("total_pendapatan"));
                 }
             }
-
             List<Transaksi> terbaru = new ArrayList<>();
             try (PreparedStatement ps = conn.prepareStatement(sqlTerbaru);
                  ResultSet rs = ps.executeQuery()) {
@@ -358,30 +292,43 @@ public class TransaksiController {
             }
             dashboard.setTransaksiTerbaru(terbaru);
             dashboard.setDaftarPromoPelanggan(promoServis.getAllPromoStatus());
-
-        } catch (SQLException e) {
-            System.err.println("Gagal memuat statistik dashboard: " + e.getMessage());
         }
-
         return dashboard;
     }
 
     private Transaksi mapResultSetToTransaksi(ResultSet rs) throws SQLException {
-        Transaksi t = new Transaksi();
-        t.setIdTransaksi(rs.getInt("id_transaksi"));
-        t.setPlatNomor(rs.getString("plat_nomor"));
-        t.setIdPelanggan(rs.getInt("id_pelanggan"));
-        t.setNamaMobil(rs.getString("nama_mobil"));
-        t.setNamaPelanggan(rs.getString("nama_pelanggan"));
-        t.setTanggalSewa(rs.getDate("tanggal_sewa"));
-        t.setTanggalKembali(rs.getDate("tanggal_kembali"));
-        t.setLamaSewa(rs.getInt("lama_sewa"));
-        t.setTotalHarga(rs.getBigDecimal("total_harga"));
-        t.setDenda(rs.getBigDecimal("denda"));
-        t.setGratisPromo(rs.getBoolean("gratis_promo"));
-        t.setStatusTransaksi(rs.getString("status_transaksi"));
-        t.setCreatedAt(rs.getTimestamp("created_at"));
-        t.setUpdatedAt(rs.getTimestamp("updated_at"));
-        return t;
+        Transaksi trx = new Transaksi();
+        trx.setIdTransaksi(rs.getInt("id_transaksi"));
+        trx.setPlatNomor(rs.getString("plat_nomor"));
+        trx.setIdPelanggan(rs.getInt("id_pelanggan"));
+        trx.setNamaMobil(rs.getString("nama_mobil"));
+        trx.setNamaPelanggan(rs.getString("nama_pelanggan"));
+        trx.setTanggalSewa(rs.getDate("tanggal_sewa"));
+        trx.setTanggalKembali(rs.getDate("tanggal_kembali"));
+        trx.setLamaSewa(rs.getInt("lama_sewa"));
+        trx.setTotalHarga(rs.getBigDecimal("total_harga"));
+        trx.setDenda(rs.getBigDecimal("denda"));
+        trx.setGratisPromo(rs.getBoolean("gratis_promo"));
+        trx.setStatusTransaksi(rs.getString("status_transaksi"));
+        trx.setCreatedAt(rs.getTimestamp("created_at"));
+        trx.setUpdatedAt(rs.getTimestamp("updated_at"));
+        return trx;
+    }
+
+    private boolean isValid(Transaksi trx) {
+        if (trx == null) return false;
+        if (trx.getPlatNomor() == null || trx.getPlatNomor().trim().isEmpty()) return false;
+        if (trx.getIdPelanggan() <= 0) return false;
+        if (trx.getTanggalSewa() == null || trx.getTanggalKembali() == null) return false;
+        if (!trx.getTanggalKembali().after(trx.getTanggalSewa())) return false;
+        if (trx.getLamaSewa() <= 0) return false;
+
+        long hitungHari = ChronoUnit.DAYS.between(
+            trx.getTanggalSewa().toLocalDate(), trx.getTanggalKembali().toLocalDate());
+        if (hitungHari != trx.getLamaSewa()) return false;
+
+        if (trx.getTotalHarga() == null || trx.getTotalHarga().signum() < 0) return false;
+        if (trx.getDenda() != null && trx.getDenda().signum() < 0) return false;
+        return true;
     }
 }

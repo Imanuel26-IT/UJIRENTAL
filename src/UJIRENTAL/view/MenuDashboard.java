@@ -347,7 +347,9 @@ public class MenuDashboard extends javax.swing.JPanel {
     }//GEN-LAST:event_btnTambahMobilActionPerformed
 
     private void btnTambahPelangganActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btnTambahPelangganActionPerformed
-        // TODO add your handling code here:
+        if (dashboardFrame != null) {
+            dashboardFrame.tampilkanMenu(DashboardFrame.CARD_PELANGGAN, "Pelanggan");
+        }
     }//GEN-LAST:event_btnTambahPelangganActionPerformed
 
 

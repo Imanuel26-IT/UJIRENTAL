@@ -1,44 +1,34 @@
-/*
- * Click nbfs://nbhost/SystemFileSystem/Templates/Licenses/license-default.txt to change this license
- * Click nbfs://nbhost/SystemFileSystem/Templates/Classes/Class.java to edit this template
- */
 package UJIRENTAL.model;
 
 import java.math.BigDecimal;
 import java.sql.Date;
 import java.sql.Timestamp;
 
-/**
- *
- * @author IMANUEL VALEN LINGGI
- */
 public class Transaksi {
+
     private int idTransaksi;
-    private String platNomor;      // Relasi ke Mobil
-    private int idPelanggan;       // Relasi ke Pelanggan
-    
-    // Properti tambahan untuk mempermudah binding ke JTable/View tanpa perlu JOIN manual berulang
+    private String platNomor;
+    private int idPelanggan;
+
     private String namaMobil;
     private String namaPelanggan;
-    
+
     private Date tanggalSewa;
     private Date tanggalKembali;
-    private int lamaSewa;          // Dalam hari
+    private int lamaSewa;
     private BigDecimal totalHarga;
     private BigDecimal denda;
     private boolean gratisPromo;
-    private String statusTransaksi; // Contoh: "Sedang Berjalan", "Selesai", "Dibatalkan"
-    
+    private String statusTransaksi;
+
     private Timestamp createdAt;
     private Timestamp updatedAt;
 
-    // Constructor kosong
     public Transaksi() {
     }
 
-    // Constructor Lengkap
-    public Transaksi(int idTransaksi, String platNomor, int idPelanggan, Date tanggalSewa, 
-                     Date tanggalKembali, int lamaSewa, BigDecimal totalHarga, 
+    public Transaksi(int idTransaksi, String platNomor, int idPelanggan, Date tanggalSewa,
+                     Date tanggalKembali, int lamaSewa, BigDecimal totalHarga,
                      BigDecimal denda, String statusTransaksi) {
         this.idTransaksi = idTransaksi;
         this.platNomor = platNomor;
@@ -51,48 +41,121 @@ public class Transaksi {
         this.statusTransaksi = statusTransaksi;
     }
 
-    // ===== Getter & Setter =====
-    public int getIdTransaksi() { return idTransaksi; }
-    public void setIdTransaksi(int idTransaksi) { this.idTransaksi = idTransaksi; }
+    // Identitas
+    public int getIdTransaksi() {
+        return idTransaksi;
+    }
 
-    public String getPlatNomor() { return platNomor; }
-    public void setPlatNomor(String platNomor) { this.platNomor = platNomor; }
+    public void setIdTransaksi(int idTransaksi) {
+        this.idTransaksi = idTransaksi;
+    }
 
-    public int getIdPelanggan() { return idPelanggan; }
-    public void setIdPelanggan(int idPelanggan) { this.idPelanggan = idPelanggan; }
+    public String getPlatNomor() {
+        return platNomor;
+    }
 
-    public String getNamaMobil() { return namaMobil; }
-    public void setNamaMobil(String namaMobil) { this.namaMobil = namaMobil; }
+    public void setPlatNomor(String platNomor) {
+        this.platNomor = platNomor;
+    }
 
-    public String getNamaPelanggan() { return namaPelanggan; }
-    public void setNamaPelanggan(String namaPelanggan) { this.namaPelanggan = namaPelanggan; }
+    public int getIdPelanggan() {
+        return idPelanggan;
+    }
 
-    public Date getTanggalSewa() { return tanggalSewa; }
-    public void setTanggalSewa(Date tanggalSewa) { this.tanggalSewa = tanggalSewa; }
+    public void setIdPelanggan(int idPelanggan) {
+        this.idPelanggan = idPelanggan;
+    }
 
-    public Date getTanggalKembali() { return tanggalKembali; }
-    public void setTanggalKembali(Date tanggalKembali) { this.tanggalKembali = tanggalKembali; }
+    // Nama Untuk Tampilan
+    public String getNamaMobil() {
+        return namaMobil;
+    }
 
-    public int getLamaSewa() { return lamaSewa; }
-    public void setLamaSewa(int lamaSewa) { this.lamaSewa = lamaSewa; }
+    public void setNamaMobil(String namaMobil) {
+        this.namaMobil = namaMobil;
+    }
 
-    public BigDecimal getTotalHarga() { return totalHarga; }
-    public void setTotalHarga(BigDecimal totalHarga) { this.totalHarga = totalHarga; }
+    public String getNamaPelanggan() {
+        return namaPelanggan;
+    }
 
-    public BigDecimal getDenda() { return denda; }
-    public void setDenda(BigDecimal denda) { this.denda = denda; }
+    public void setNamaPelanggan(String namaPelanggan) {
+        this.namaPelanggan = namaPelanggan;
+    }
 
-    public boolean isGratisPromo() { return gratisPromo; }
-    public void setGratisPromo(boolean gratisPromo) { this.gratisPromo = gratisPromo; }
+    // Detail Sewa
+    public Date getTanggalSewa() {
+        return tanggalSewa;
+    }
 
-    public String getStatusTransaksi() { return statusTransaksi; }
-    public void setStatusTransaksi(String statusTransaksi) { this.statusTransaksi = statusTransaksi; }
+    public void setTanggalSewa(Date tanggalSewa) {
+        this.tanggalSewa = tanggalSewa;
+    }
 
-    public Timestamp getCreatedAt() { return createdAt; }
-    public void setCreatedAt(Timestamp createdAt) { this.createdAt = createdAt; }
+    public Date getTanggalKembali() {
+        return tanggalKembali;
+    }
 
-    public Timestamp getUpdatedAt() { return updatedAt; }
-    public void setUpdatedAt(Timestamp updatedAt) { this.updatedAt = updatedAt; }
+    public void setTanggalKembali(Date tanggalKembali) {
+        this.tanggalKembali = tanggalKembali;
+    }
+
+    public int getLamaSewa() {
+        return lamaSewa;
+    }
+
+    public void setLamaSewa(int lamaSewa) {
+        this.lamaSewa = lamaSewa;
+    }
+
+    public BigDecimal getTotalHarga() {
+        return totalHarga;
+    }
+
+    public void setTotalHarga(BigDecimal totalHarga) {
+        this.totalHarga = totalHarga;
+    }
+
+    public BigDecimal getDenda() {
+        return denda;
+    }
+
+    public void setDenda(BigDecimal denda) {
+        this.denda = denda;
+    }
+
+    public boolean isGratisPromo() {
+        return gratisPromo;
+    }
+
+    public void setGratisPromo(boolean gratisPromo) {
+        this.gratisPromo = gratisPromo;
+    }
+
+    public String getStatusTransaksi() {
+        return statusTransaksi;
+    }
+
+    public void setStatusTransaksi(String statusTransaksi) {
+        this.statusTransaksi = statusTransaksi;
+    }
+
+    // Waktu
+    public Timestamp getCreatedAt() {
+        return createdAt;
+    }
+
+    public void setCreatedAt(Timestamp createdAt) {
+        this.createdAt = createdAt;
+    }
+
+    public Timestamp getUpdatedAt() {
+        return updatedAt;
+    }
+
+    public void setUpdatedAt(Timestamp updatedAt) {
+        this.updatedAt = updatedAt;
+    }
 
     @Override
     public String toString() {

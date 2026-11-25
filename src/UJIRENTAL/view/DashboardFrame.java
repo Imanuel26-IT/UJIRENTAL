@@ -6,7 +6,11 @@ package UJIRENTAL.view;
 
 import java.awt.BorderLayout;
 import java.awt.CardLayout;
+import java.util.List;
 import javax.swing.JPanel;
+import java.awt.EventQueue;
+import javax.swing.UIManager;
+import javax.swing.UIManager.LookAndFeelInfo;
 
 /**
  *
@@ -14,15 +18,13 @@ import javax.swing.JPanel;
  */
 public class DashboardFrame extends javax.swing.JFrame {
 
-    private static final java.util.logging.Logger logger =
-            java.util.logging.Logger.getLogger(DashboardFrame.class.getName());
-
-    // Konstanta nama kartu untuk CardLayout
+    // Nama kartu untuk CardLayout
     public static final String CARD_DASHBOARD = "CARD_DASHBOARD";
     public static final String CARD_MOBIL = "CARD_MOBIL";
+    public static final String CARD_PELANGGAN = "CARD_PELANGGAN";
     public static final String CARD_TRANSAKSI = "CARD_TRANSAKSI";
+    public static final String CARD_LAPORAN = "CARD_LAPORAN";
 
-    // Komponen yang dibutuhkan saat berpindah halaman
     private Header header;
     private JPanel pnlKonten;
     private CardLayout cardLayout;
@@ -42,7 +44,9 @@ public class DashboardFrame extends javax.swing.JFrame {
 
         pnlKonten.add(new MenuDashboard(this), CARD_DASHBOARD);
         pnlKonten.add(new MenuMobil(), CARD_MOBIL);
+        pnlKonten.add(new Pelanggan(), CARD_PELANGGAN);
         pnlKonten.add(new MenuTransaksi(), CARD_TRANSAKSI);
+        pnlKonten.add(new Laporan(), CARD_LAPORAN);
 
         JPanel pnlKanan = new JPanel(new BorderLayout());
         pnlKanan.add(header, BorderLayout.NORTH);
@@ -58,21 +62,25 @@ public class DashboardFrame extends javax.swing.JFrame {
         revalidate();
         repaint();
     }
-
-    /**
-     * Method terpusat untuk berpindah antarhalaman dan memperbarui judul di Header.
-     * Dapat dipanggil dari Sidebar maupun tombol pintasan di MenuDashboard.
-     */
+    
     public void tampilkanMenu(String namaCard, String judulHeader) {
-        boolean menuDikenal = CARD_DASHBOARD.equals(namaCard)
-                || CARD_MOBIL.equals(namaCard)
-                || CARD_TRANSAKSI.equals(namaCard);
-        if (!menuDikenal || judulHeader == null) {
+        if (judulHeader == null || !isMenuDikenal(namaCard)) {
             throw new IllegalArgumentException("Menu atau judul tidak valid.");
         }
 
         cardLayout.show(pnlKonten, namaCard);
         header.setJudulMenu(judulHeader);
+    }   
+
+    private boolean isMenuDikenal(String namaCard) {
+        List<String> semuaMenu = List.of(
+            CARD_DASHBOARD,
+            CARD_MOBIL,
+            CARD_PELANGGAN,
+            CARD_TRANSAKSI,
+            CARD_LAPORAN
+        );
+        return semuaMenu.contains(namaCard);
     }
     /**
      * This method is called from within the constructor to initialize the form.
@@ -103,25 +111,21 @@ public class DashboardFrame extends javax.swing.JFrame {
      * @param args the command line arguments
      */
     public static void main(String args[]) {
-        /* Set the Nimbus look and feel */
-        //<editor-fold defaultstate="collapsed" desc=" Look and feel setting code (optional) ">
-        /* If Nimbus (introduced in Java SE 6) is not available, stay with the default look and feel.
-         * For details see http://download.oracle.com/javase/tutorial/uiswing/lookandfeel/plaf.html 
-         */
+        pasangTemaNimbus();
+        EventQueue.invokeLater(() -> new DashboardFrame().setVisible(true));
+    }
+
+    private static void pasangTemaNimbus() {
         try {
-            for (javax.swing.UIManager.LookAndFeelInfo info : javax.swing.UIManager.getInstalledLookAndFeels()) {
+            for (LookAndFeelInfo info : UIManager.getInstalledLookAndFeels()) {
                 if ("Nimbus".equals(info.getName())) {
-                    javax.swing.UIManager.setLookAndFeel(info.getClassName());
+                    UIManager.setLookAndFeel(info.getClassName());
                     break;
                 }
             }
-        } catch (ReflectiveOperationException | javax.swing.UnsupportedLookAndFeelException ex) {
-            logger.log(java.util.logging.Level.SEVERE, null, ex);
+        } catch (Exception e) {
+            // Kalau Nimbus gagal, pakai tema bawaan aja
         }
-        //</editor-fold>
-
-        /* Create and display the form */
-        java.awt.EventQueue.invokeLater(() -> new DashboardFrame().setVisible(true));
     }
 
     // Variables declaration - do not modify//GEN-BEGIN:variables
